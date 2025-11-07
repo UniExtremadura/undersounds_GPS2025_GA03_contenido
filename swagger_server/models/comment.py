@@ -38,7 +38,7 @@ class Comment(Model):
         :param updated_at: The updated_at of this Comment.  # noqa: E501
         :type updated_at: datetime
         :param replies: The replies of this Comment.  # noqa: E501
-        :type replies: List['Comment']
+        :type replies: List[Comment]
         """
         self.swagger_types = {
             'id': str,
@@ -318,7 +318,7 @@ class Comment(Model):
 
 
         :return: The replies of this Comment.
-        :rtype: List['Comment']
+        :rtype: List[Comment]
         """
         return self._replies
 
@@ -328,7 +328,7 @@ class Comment(Model):
 
 
         :param replies: The replies of this Comment.
-        :type replies: List['Comment']
+        :type replies: List[Comment]
         """
 
         self._replies = replies
