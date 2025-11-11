@@ -454,16 +454,19 @@ exports.tracksTrackIdPATCH = async function (body, trackId) {
  * returns inline_response_200
  **/
 exports.tracksTrackIdStreamGET = function (trackId) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
-      url: "http://example.com/aeiou",
-      expiresAt: "2000-01-23T04:56:07.000+00:00",
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
+  return (async () => {
+    const t = await prisma.track.findUnique({ where: { id: trackId }, include: { audio: true } });
+    if (!t) {
+      const err = new Error('Track not found');
+      err.status = 404;
+      throw err;
     }
-  });
+    if (!t.audio || !t.audio.url) {
+      const err = new Error('No audio available for this track');
+      err.status = 404;
+      throw err;
+    }
+    // Return JSON with the URL (client can fetch/redirect to it)
+    return { url: t.audio.url, expiresAt: null };
+  })();
 };

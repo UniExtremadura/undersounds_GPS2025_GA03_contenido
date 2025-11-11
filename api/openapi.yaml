@@ -3963,11 +3963,7 @@ components:
         file:
           type: string
           format: binary
-        bitrate:
-          minimum: 64
-          type: integer
-        codec:
-          type: string
+          description: Audio file (MP3, WAV, OGG, etc.)
     inline_response_200:
       type: object
       properties:
