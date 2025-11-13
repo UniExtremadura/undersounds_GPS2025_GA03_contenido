@@ -2,6 +2,7 @@
 
 var utils = require('../utils/writer.js');
 var Tracks = require('../service/TracksService');
+var StreamingService = require('../service/StreamingService');
 
 module.exports.tracksGET = function tracksGET (req, res, next, page, limit, include, albumId, artistId, labelId, genre, tag, language, minDurationSec, maxDurationSec, releasedFrom, releasedTo, sort, order, q) {
   Tracks.tracksGET(page, limit, include, albumId, artistId, labelId, genre, tag, language, minDurationSec, maxDurationSec, releasedFrom, releasedTo, sort, order, q)
@@ -94,11 +95,5 @@ module.exports.tracksTrackIdPATCH = function tracksTrackIdPATCH (req, res, next,
 };
 
 module.exports.tracksTrackIdStreamGET = function tracksTrackIdStreamGET (req, res, next, trackId) {
-  Tracks.tracksTrackIdStreamGET(trackId)
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeJson(res, response);
-    });
+  StreamingService.streamTrackAudio(trackId, req, res);
 };

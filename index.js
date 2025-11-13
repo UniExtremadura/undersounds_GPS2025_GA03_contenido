@@ -108,7 +108,6 @@ app.post('/tracks/:trackId/audio', makeMulferForRoute('audio').single('file'), (
       utils.writeJson(res, { data: { message: err?.message || 'Error' }, status: err?.status || 500 }, err?.status || 500);
     });
 });
-
 // Servir archivos estáticos subidos en /uploads
 const uploadsDir = path.join(__dirname, 'uploads');
 try {
@@ -125,3 +124,4 @@ http.createServer(app).listen(serverPort, function () {
   console.log(`Your server is listening on port ${serverPort} (http://localhost:${serverPort})`);
   console.log(`Swagger-ui is available on http://localhost:${serverPort}/docs`);
 });
+
