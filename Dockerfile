@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
 
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # Install dependencies
@@ -17,7 +17,7 @@ COPY . .
 # Remove development dependencies for runtime image
 RUN npm prune --omit=dev
 
-FROM node:20-alpine
+FROM node:20-slim
 WORKDIR /app
 
 ENV NODE_ENV=production \
