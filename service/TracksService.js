@@ -101,6 +101,10 @@ exports.tracksGET = async function (
       trackFilters.durationSec = durationFilter;
     }
 
+    if(albumId){
+      trackFilters.albumId = albumId;
+    }
+
     const albumFilters = {};
     if (genre && String(genre).trim()) {
       // Normaliza variantes comunes (espacios vs guiones) y tolera mayúsculas/minúsculas
