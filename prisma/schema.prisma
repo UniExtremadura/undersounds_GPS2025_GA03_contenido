@@ -53,7 +53,6 @@ model Track {
   stats       TrackStats?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  favorites   Favorite[] // Relación inversa
 }
 
 model Artist {
@@ -110,9 +109,13 @@ model TrackStats {
 }
 
 model Favorite {
-  id      String @id @default(uuid())
-  track   Track  @relation(fields: [trackId], references: [id])
-  trackId String @unique // Relación uno a uno, clave única
+  id         String   @id @default(uuid())
+  userId     String
+  targetId   String
+  targetType String
+  createdAt  DateTime @default(now())
+
+  @@index([userId, targetType])
 }
 
 enum MerchCategory {
