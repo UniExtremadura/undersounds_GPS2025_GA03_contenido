@@ -99,15 +99,77 @@ exports.albumsAlbumIdCoverPOST = async function (albumId /*, body */) {
 
 // ----------------- CRUD ÁLBUM -----------------
 
-exports.albumsAlbumIdDELETE = async function (albumId, hard) {
-  if (hard === true) {
-    await prisma.album.delete({ where: { id: albumId } });
-    return;
-  }
-  await prisma.album.update({
+exports.albumsAlbumIdDELETE = async function (albumId) {
+  // Always perform irreversible delete server-side.
+  // Delete album and related tracks and dependent records in a transaction.
+
+  // Load album with its tracks and cover
+  const album = await prisma.album.findUnique({
     where: { id: albumId },
-    data: { releaseState: "archived" },
+    include: { tracks: { select: { id: true } }, cover: true },
   });
+
+  if (!album) {
+    const err = new Error("Álbum no encontrado");
+    err.status = 404;
+    throw err;
+  }
+
+  const trackIds = (album.tracks || []).map((t) => t.id);
+  const coverId = album.coverId;
+
+  try {
+    // Use interactive transaction to run ordered deletes and get clearer errors
+    await prisma.$transaction(async (tx) => {
+      console.log('[albumsAlbumIdDELETE] starting transaction for album', albumId);
+
+      // 1) Delete comments referencing the album
+      console.log('[albumsAlbumIdDELETE] deleting album comments');
+      await tx.comment.deleteMany({ where: { targetType: "album", targetId: albumId } });
+
+      if (trackIds.length) {
+        console.log('[albumsAlbumIdDELETE] deleting comments for tracks:', trackIds);
+        await tx.comment.deleteMany({ where: { targetType: "track", targetId: { in: trackIds } } });
+
+        console.log('[albumsAlbumIdDELETE] deleting favorites for tracks');
+        // favorites store targetType/targetId, remove favorites that point to these tracks
+        await tx.favorite.deleteMany({ where: { targetType: 'track', targetId: { in: trackIds } } });
+
+        console.log('[albumsAlbumIdDELETE] deleting trackStats for tracks');
+        await tx.trackStats.deleteMany({ where: { trackId: { in: trackIds } } });
+
+        console.log('[albumsAlbumIdDELETE] deleting audio objects for tracks');
+        await tx.audio.deleteMany({ where: { trackId: { in: trackIds } } });
+
+        console.log('[albumsAlbumIdDELETE] deleting lyrics for tracks');
+        await tx.lyrics.deleteMany({ where: { trackId: { in: trackIds } } });
+
+        console.log('[albumsAlbumIdDELETE] deleting tracks');
+        await tx.track.deleteMany({ where: { albumId: albumId } });
+      }
+
+      console.log('[albumsAlbumIdDELETE] deleting albumStats');
+      await tx.albumStats.deleteMany({ where: { albumId: albumId } });
+
+      console.log('[albumsAlbumIdDELETE] deleting album record');
+      await tx.album.delete({ where: { id: albumId } });
+
+      if (coverId) {
+        console.log('[albumsAlbumIdDELETE] deleting cover image', coverId);
+        await tx.image.delete({ where: { id: coverId } });
+      }
+
+      console.log('[albumsAlbumIdDELETE] transaction complete for album', albumId);
+    });
+
+    return;
+  } catch (err) {
+    console.error('[albumsAlbumIdDELETE] transaction error for album', albumId, err?.code || '', err?.meta || '', err?.message || err);
+    // If Prisma reports P2025 (record not found) we can translate to 404, otherwise 500
+    const e = new Error(err?.message || 'Failed to delete album');
+    e.status = err?.code === 'P2025' ? 404 : 500;
+    throw e;
+  }
 };
 
 exports.albumsAlbumIdGET = async function (albumId, include) {
