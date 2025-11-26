@@ -106,6 +106,12 @@ exports.tracksGET = async function (
     }
 
     const albumFilters = {};
+    if (artistId !== undefined && artistId !== null) {
+      const artistIdStr = String(artistId).trim();
+      if (artistIdStr) {
+        albumFilters.artistId = artistIdStr;
+      }
+    }
     if (genre && String(genre).trim()) {
       // Normaliza variantes comunes (espacios vs guiones) y tolera mayúsculas/minúsculas
       const gRaw = String(genre).trim();

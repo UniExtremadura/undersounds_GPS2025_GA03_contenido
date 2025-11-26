@@ -520,7 +520,7 @@ paths:
         explode: true
         schema:
           type: string
-          format: uuid
+          description: Puede ser UUID o ID numérico del artista
       - name: labelId
         in: query
         required: false
