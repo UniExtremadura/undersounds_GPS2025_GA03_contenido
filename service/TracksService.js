@@ -258,7 +258,8 @@ exports.tracksPOST = async function (body) {
 exports.tracksTrackIdGET = async function (trackId, include) {
   const includeOptions = buildInclude(include) || {};
 
-  // Asegura que siempre traigamos las estadísticas para exponer el playCount
+  // Forzar que siempre incluya album con cover y stats
+  includeOptions.album = { include: { cover: true } };
   includeOptions.stats = true;
 
   const track = await prisma.track.findUnique({
