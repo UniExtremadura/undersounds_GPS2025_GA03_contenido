@@ -1,4 +1,5 @@
 "use strict";
+let prisma;
 try {
   const prismaModule = require("../src/db/prisma");
   prisma = prismaModule?.prisma || prismaModule?.default || prismaModule;
@@ -10,6 +11,7 @@ try {
   const { PrismaClient } = require("@prisma/client");
   prisma = new PrismaClient();
 }
+
 /**
  * Listar comentarios del álbum
  *
