@@ -1,5 +1,15 @@
 "use strict";
-
+try {
+  const prismaModule = require("../src/db/prisma");
+  prisma = prismaModule?.prisma || prismaModule?.default || prismaModule;
+  if (!prisma) {
+    const { PrismaClient } = require("@prisma/client");
+    prisma = new PrismaClient();
+  }
+} catch (e) {
+  const { PrismaClient } = require("@prisma/client");
+  prisma = new PrismaClient();
+}
 /**
  * Listar comentarios del álbum
  *
