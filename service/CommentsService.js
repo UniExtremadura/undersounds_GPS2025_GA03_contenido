@@ -368,50 +368,75 @@ exports.commentsPOST = function (body) {
  * limit Integer  (optional)
  * returns PaginatedCommentList
  **/
-exports.merchMerchIdCommentsGET = function (merchId, page, limit) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
-      data: [
-        {
-          createdAt: "2000-01-23T04:56:07.000+00:00",
-          targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          replies: [null, null],
-          rating: 1,
-          targetType: "album",
-          id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          text: "text",
-          userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          status: "visible",
-          likes: 6,
-          updatedAt: "2000-01-23T04:56:07.000+00:00",
-        },
-        {
-          createdAt: "2000-01-23T04:56:07.000+00:00",
-          targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          replies: [null, null],
-          rating: 1,
-          targetType: "album",
-          id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          text: "text",
-          userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          status: "visible",
-          likes: 6,
-          updatedAt: "2000-01-23T04:56:07.000+00:00",
-        },
-      ],
-      meta: {
-        total: 123,
-        limit: 20,
-        page: 1,
-      },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
-  });
+exports.merchMerchIdCommentsGET = async function (merchId, page, limit) {
+  // return new Promise(function (resolve, reject) {
+  //   var examples = {};
+  //   examples["application/json"] = {
+  //     data: [
+  //       {
+  //         createdAt: "2000-01-23T04:56:07.000+00:00",
+  //         targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //         replies: [null, null],
+  //         rating: 1,
+  //         targetType: "album",
+  //         id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //         text: "text",
+  //         userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //         status: "visible",
+  //         likes: 6,
+  //         updatedAt: "2000-01-23T04:56:07.000+00:00",
+  //       },
+  //       {
+  //         createdAt: "2000-01-23T04:56:07.000+00:00",
+  //         targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //         replies: [null, null],
+  //         rating: 1,
+  //         targetType: "album",
+  //         id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //         text: "text",
+  //         userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //         status: "visible",
+  //         likes: 6,
+  //         updatedAt: "2000-01-23T04:56:07.000+00:00",
+  //       },
+  //     ],
+  //     meta: {
+  //       total: 123,
+  //       limit: 20,
+  //       page: 1,
+  //     },
+  //   };
+  //   if (Object.keys(examples).length > 0) {
+  //     resolve(examples[Object.keys(examples)[0]]);
+  //   } else {
+  //     resolve();
+  //   }
+  // });
+
+  console.log(
+    "Fetching comments for merch:",
+    merchId,
+    "page:",
+    page,
+    "limit:",
+    limit
+  );
+
+  const pageNum = toInt(page, 1);
+  const pageSize = toInt(limit, 20);
+  const skip = (pageNum - 1) * pageSize;
+
+  const where = { targetType: "merch", targetId: merchId };
+  const [data, total] = await Promise.all([
+    prisma.comment.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.comment.count({ where }),
+  ]);
+  return { data, meta: { total, page: pageNum, limit: pageSize } };
 };
 
 /**
@@ -421,30 +446,44 @@ exports.merchMerchIdCommentsGET = function (merchId, page, limit) {
  * merchId UUID
  * returns CommentResponse
  **/
-exports.merchMerchIdCommentsPOST = function (body, merchId) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
-      data: {
-        createdAt: "2000-01-23T04:56:07.000+00:00",
-        targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        replies: [null, null],
-        rating: 1,
-        targetType: "album",
-        id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        text: "text",
-        userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        status: "visible",
-        likes: 6,
-        updatedAt: "2000-01-23T04:56:07.000+00:00",
-      },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+exports.merchMerchIdCommentsPOST = async function (body, merchId) {
+  // return new Promise(function (resolve, reject) {
+  //   var examples = {};
+  //   examples["application/json"] = {
+  //     data: {
+  //       createdAt: "2000-01-23T04:56:07.000+00:00",
+  //       targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //       replies: [null, null],
+  //       rating: 1,
+  //       targetType: "album",
+  //       id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //       text: "text",
+  //       userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+  //       status: "visible",
+  //       likes: 6,
+  //       updatedAt: "2000-01-23T04:56:07.000+00:00",
+  //     },
+  //   };
+  //   if (Object.keys(examples).length > 0) {
+  //     resolve(examples[Object.keys(examples)[0]]);
+  //   } else {
+  //     resolve();
+  //   }
+  // });
+  console.log("Creating comment for merch:", merchId, "with body:", body);
+  const created = await prisma.comment.create({
+    data: {
+      targetType: "merch",
+      targetId: merchId,
+      text: body?.text ?? null,
+      rating: body?.rating ?? null,
+      userId: body?.userId ?? null,
+      status: "visible",
+    },
   });
+  return {
+    data: created,
+  };
 };
 
 /**
