@@ -1,4 +1,16 @@
 "use strict";
+let prisma;
+try {
+  const prismaModule = require("../src/db/prisma");
+  prisma = prismaModule?.prisma || prismaModule?.default || prismaModule;
+  if (!prisma) {
+    const { PrismaClient } = require("@prisma/client");
+    prisma = new PrismaClient();
+  }
+} catch (e) {
+  const { PrismaClient } = require("@prisma/client");
+  prisma = new PrismaClient();
+}
 
 /**
  * Listar comentarios del álbum
@@ -414,7 +426,7 @@ exports.tracksTrackIdCommentsGET = async function (trackId, page, limit) {
  * trackId UUID
  * returns CommentResponse
  **/
-exports.tracksTrackIdCommentsPOST = function (body, trackId) {
+exports.tracksTrackIdCommentsPOST = async function (body, trackId) {
   try {
     const created = await prisma.comment.create({
       data: {
