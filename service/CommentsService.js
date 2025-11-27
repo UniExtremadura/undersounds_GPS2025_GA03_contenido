@@ -83,10 +83,14 @@ exports.albumsAlbumIdCommentsPOST = async function (body, albumId) {
  * commentId UUID
  * no response value expected for this operation
  **/
-exports.commentsCommentIdDELETE = function (commentId) {
-  return new Promise(function (resolve, reject) {
-    resolve();
-  });
+exports.commentsCommentIdDELETE = async function (commentId) {
+  try {
+    await prisma.comment.delete({ where: { id: commentId } });
+    return { meta: { deleted: true, id: commentId } };
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    throw error;
+  }
 };
 
 /**
@@ -95,30 +99,17 @@ exports.commentsCommentIdDELETE = function (commentId) {
  * commentId UUID
  * returns CommentResponse
  **/
-exports.commentsCommentIdGET = function (commentId) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
-      data: {
-        createdAt: "2000-01-23T04:56:07.000+00:00",
-        targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        replies: [null, null],
-        rating: 1,
-        targetType: "album",
-        id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        text: "text",
-        userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        status: "visible",
-        likes: 6,
-        updatedAt: "2000-01-23T04:56:07.000+00:00",
-      },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
+exports.commentsCommentIdGET = async function (commentId) {
+  try {
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment) {
+      return { error: "Comentario no encontrado", statusCode: 404 };
     }
-  });
+    return { data: comment };
+  } catch (error) {
+    console.error("Error fetching comment detail:", error);
+    throw error;
+  }
 };
 
 /**
@@ -152,30 +143,21 @@ exports.commentsCommentIdLikePOST = function (commentId) {
  * commentId UUID
  * returns CommentResponse
  **/
-exports.commentsCommentIdPATCH = function (body, commentId) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
+exports.commentsCommentIdPATCH = async function (body, commentId) {
+  try {
+    const updated = await prisma.comment.update({
+      where: { id: commentId },
       data: {
-        createdAt: "2000-01-23T04:56:07.000+00:00",
-        targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        replies: [null, null],
-        rating: 1,
-        targetType: "album",
-        id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        text: "text",
-        userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        status: "visible",
-        likes: 6,
-        updatedAt: "2000-01-23T04:56:07.000+00:00",
+        text: body?.text ?? undefined,
+        status: body?.status ?? undefined,
+        rating: body?.rating ?? undefined,
       },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
-  });
+    });
+    return { data: updated };
+  } catch (error) {
+    console.error("Error updating comment:", error);
+    throw error;
+  }
 };
 
 /**
@@ -282,50 +264,32 @@ exports.commentsCommentIdReportPOST = function (body, commentId) {
  * q String  (optional)
  * returns PaginatedCommentList
  **/
-exports.commentsGET = function (page, limit, targetType, targetId, status, q) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
-      data: [
-        {
-          createdAt: "2000-01-23T04:56:07.000+00:00",
-          targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          replies: [null, null],
-          rating: 1,
-          targetType: "album",
-          id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          text: "text",
-          userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          status: "visible",
-          likes: 6,
-          updatedAt: "2000-01-23T04:56:07.000+00:00",
-        },
-        {
-          createdAt: "2000-01-23T04:56:07.000+00:00",
-          targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          replies: [null, null],
-          rating: 1,
-          targetType: "album",
-          id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          text: "text",
-          userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          status: "visible",
-          likes: 6,
-          updatedAt: "2000-01-23T04:56:07.000+00:00",
-        },
-      ],
-      meta: {
-        total: 123,
-        limit: 20,
-        page: 1,
-      },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
-  });
+exports.commentsGET = async function (page, limit, targetType, targetId, status, q) {
+  const pageNum = toInt(page, 1);
+  const pageSize = toInt(limit, 20);
+  const skip = (pageNum - 1) * pageSize;
+
+  const where = {};
+  if (targetType) where.targetType = targetType;
+  if (targetId) where.targetId = targetId;
+  if (status) where.status = status;
+  if (q) where.text = like(q);
+
+  try {
+    const [data, total] = await Promise.all([
+      prisma.comment.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.comment.count({ where }),
+    ]);
+    return { data, meta: { total, page: pageNum, limit: pageSize } };
+  } catch (error) {
+    console.error("Error fetching global comments:", error);
+    throw error;
+  }
 };
 
 /**
@@ -334,30 +298,26 @@ exports.commentsGET = function (page, limit, targetType, targetId, status, q) {
  * body CommentCreateInput
  * returns CommentResponse
  **/
-exports.commentsPOST = function (body) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
-      data: {
-        createdAt: "2000-01-23T04:56:07.000+00:00",
-        targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        replies: [null, null],
-        rating: 1,
-        targetType: "album",
-        id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        text: "text",
-        userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        status: "visible",
-        likes: 6,
-        updatedAt: "2000-01-23T04:56:07.000+00:00",
-      },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
+exports.commentsPOST = async function (body) {
+ try {
+    if (!body?.targetType || !body?.targetId) {
+      return { error: "Faltan targetType o targetId", statusCode: 400 };
     }
-  });
+    const created = await prisma.comment.create({
+      data: {
+        targetType: body.targetType,
+        targetId: body.targetId,
+        text: body?.text ?? null,
+        rating: body?.rating ?? null,
+        userId: body?.userId ?? null,
+        status: "visible",
+      },
+    });
+    return { data: created };
+  } catch (error) {
+    console.error("Error creating global comment:", error);
+    throw error;
+  }
 };
 
 /**
@@ -369,50 +329,6 @@ exports.commentsPOST = function (body) {
  * returns PaginatedCommentList
  **/
 exports.merchMerchIdCommentsGET = async function (merchId, page, limit) {
-  // return new Promise(function (resolve, reject) {
-  //   var examples = {};
-  //   examples["application/json"] = {
-  //     data: [
-  //       {
-  //         createdAt: "2000-01-23T04:56:07.000+00:00",
-  //         targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //         replies: [null, null],
-  //         rating: 1,
-  //         targetType: "album",
-  //         id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //         text: "text",
-  //         userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //         status: "visible",
-  //         likes: 6,
-  //         updatedAt: "2000-01-23T04:56:07.000+00:00",
-  //       },
-  //       {
-  //         createdAt: "2000-01-23T04:56:07.000+00:00",
-  //         targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //         replies: [null, null],
-  //         rating: 1,
-  //         targetType: "album",
-  //         id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //         text: "text",
-  //         userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //         status: "visible",
-  //         likes: 6,
-  //         updatedAt: "2000-01-23T04:56:07.000+00:00",
-  //       },
-  //     ],
-  //     meta: {
-  //       total: 123,
-  //       limit: 20,
-  //       page: 1,
-  //     },
-  //   };
-  //   if (Object.keys(examples).length > 0) {
-  //     resolve(examples[Object.keys(examples)[0]]);
-  //   } else {
-  //     resolve();
-  //   }
-  // });
-
   console.log(
     "Fetching comments for merch:",
     merchId,
@@ -447,43 +363,22 @@ exports.merchMerchIdCommentsGET = async function (merchId, page, limit) {
  * returns CommentResponse
  **/
 exports.merchMerchIdCommentsPOST = async function (body, merchId) {
-  // return new Promise(function (resolve, reject) {
-  //   var examples = {};
-  //   examples["application/json"] = {
-  //     data: {
-  //       createdAt: "2000-01-23T04:56:07.000+00:00",
-  //       targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //       replies: [null, null],
-  //       rating: 1,
-  //       targetType: "album",
-  //       id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //       text: "text",
-  //       userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-  //       status: "visible",
-  //       likes: 6,
-  //       updatedAt: "2000-01-23T04:56:07.000+00:00",
-  //     },
-  //   };
-  //   if (Object.keys(examples).length > 0) {
-  //     resolve(examples[Object.keys(examples)[0]]);
-  //   } else {
-  //     resolve();
-  //   }
-  // });
-  console.log("Creating comment for merch:", merchId, "with body:", body);
-  const created = await prisma.comment.create({
-    data: {
-      targetType: "merch",
-      targetId: merchId,
-      text: body?.text ?? null,
-      rating: body?.rating ?? null,
-      userId: body?.userId ?? null,
-      status: "visible",
-    },
-  });
-  return {
-    data: created,
-  };
+  try {
+    const created = await prisma.comment.create({
+      data: {
+        targetType: "merch",
+        targetId: merchId,
+        text: body?.text ?? null,
+        rating: body?.rating ?? null,
+        userId: body?.userId ?? null,
+        status: "visible",
+      },
+    });
+    return { data: created };
+  } catch (error) {
+    console.error("Error creating merch comment:", error);
+    throw error;
+  }
 };
 
 /**
@@ -494,50 +389,22 @@ exports.merchMerchIdCommentsPOST = async function (body, merchId) {
  * limit Integer  (optional)
  * returns PaginatedCommentList
  **/
-exports.tracksTrackIdCommentsGET = function (trackId, page, limit) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
-      data: [
-        {
-          createdAt: "2000-01-23T04:56:07.000+00:00",
-          targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          replies: [null, null],
-          rating: 1,
-          targetType: "album",
-          id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          text: "text",
-          userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          status: "visible",
-          likes: 6,
-          updatedAt: "2000-01-23T04:56:07.000+00:00",
-        },
-        {
-          createdAt: "2000-01-23T04:56:07.000+00:00",
-          targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          replies: [null, null],
-          rating: 1,
-          targetType: "album",
-          id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          text: "text",
-          userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-          status: "visible",
-          likes: 6,
-          updatedAt: "2000-01-23T04:56:07.000+00:00",
-        },
-      ],
-      meta: {
-        total: 123,
-        limit: 20,
-        page: 1,
-      },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
-  });
+exports.tracksTrackIdCommentsGET = async function (trackId, page, limit) {
+  const pageNum = toInt(page, 1);
+  const pageSize = toInt(limit, 20);
+  const skip = (pageNum - 1) * pageSize;
+
+  const where = { targetType: "track", targetId: trackId };
+  const [data, total] = await Promise.all([
+    prisma.comment.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.comment.count({ where }),
+  ]);
+  return { data, meta: { total, page: pageNum, limit: pageSize } };
 };
 
 /**
@@ -548,27 +415,20 @@ exports.tracksTrackIdCommentsGET = function (trackId, page, limit) {
  * returns CommentResponse
  **/
 exports.tracksTrackIdCommentsPOST = function (body, trackId) {
-  return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples["application/json"] = {
+  try {
+    const created = await prisma.comment.create({
       data: {
-        createdAt: "2000-01-23T04:56:07.000+00:00",
-        targetId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        replies: [null, null],
-        rating: 1,
-        targetType: "album",
-        id: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
-        text: "text",
-        userId: "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+        targetType: "track",
+        targetId: trackId,
+        text: body?.text ?? null,
+        rating: body?.rating ?? null,
+        userId: body?.userId ?? null,
         status: "visible",
-        likes: 6,
-        updatedAt: "2000-01-23T04:56:07.000+00:00",
       },
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
-  });
+    });
+    return { data: created };
+  } catch (error) {
+    console.error("Error creating track comment:", error);
+    throw error;
+  }
 };
