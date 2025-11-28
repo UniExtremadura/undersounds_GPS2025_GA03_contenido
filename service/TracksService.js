@@ -176,14 +176,16 @@ exports.tracksGET = async function (
     const sortOrder = validOrder.includes(order) ? order : "desc";
 
     let orderBy;
-    if(sort === "playCount") {
-      orderBy = { stats: {playCount: sortOrder} };
+    if (sort === "playCount") {
+      orderBy = [{ stats: { playCount: sortOrder } }, { title: "asc" }];
+    } else if (sort === "title") {
+      orderBy = [{ title: sortOrder }, { createdAt: "desc" }];
+    } else if (sort === "durationSec") {
+      orderBy = [{ durationSec: sortOrder }, { title: "asc" }];
+    } else {
+      orderBy = [{ createdAt: sortOrder }];
     }
-    else {
-      const validSortFields = ["durationSec", "title", "createdAt"];
-      const sortField = validSortFields.includes(sort) ? sort : "createdAt";
-      orderBy = { [sortField]: sortOrder};
-    }
+
     // Debug opcional
     if (process.env.DEBUG_CONTENT === '1') {
       console.log('[tracksGET] where=', JSON.stringify(where));
