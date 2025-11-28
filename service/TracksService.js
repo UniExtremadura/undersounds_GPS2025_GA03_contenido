@@ -342,7 +342,22 @@ exports.tracksTrackIdPATCH = async function (body, trackId) {
  */
 exports.tracksTrackIdDELETE = async function (trackId) {
   try {
-    await prisma.track.delete({ where: { id: trackId } });
+    await prisma.$transaction(async (tx) => {
+      // Remove 1:1 dependent rows first to satisfy FK constraints
+      await tx.audio.deleteMany({ where: { trackId } });
+      await tx.lyrics.deleteMany({ where: { trackId } });
+      await tx.trackStats.deleteMany({ where: { trackId } });
+
+      // Clean up loosely-related records referencing this track
+      if (tx.comment) {
+        await tx.comment.deleteMany({ where: { targetType: 'track', targetId: trackId } });
+      }
+      if (tx.favorite) {
+        await tx.favorite.deleteMany({ where: { targetType: 'track', targetId: trackId } });
+      }
+
+      await tx.track.delete({ where: { id: trackId } });
+    });
     return { data: { message: 'Track deleted' } };
   } catch (err) {
     const e = new Error(err.message || 'Failed to delete track');
