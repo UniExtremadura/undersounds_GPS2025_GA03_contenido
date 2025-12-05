@@ -16,7 +16,11 @@ module.exports.albumsAlbumIdCommentsGET = function albumsAlbumIdCommentsGET (req
 module.exports.albumsAlbumIdCommentsPOST = function albumsAlbumIdCommentsPOST (req, res, next, body, albumId) {
   Comments.albumsAlbumIdCommentsPOST(body, albumId)
     .then(function (response) {
-      utils.writeJson(res, response);
+      if (response.error) {
+        res.status(response.statusCode || 500).json(response);
+      } else {
+        utils.writeJson(res, response);
+      }
     })
     .catch(function (response) {
       utils.writeJson(res, response);
@@ -116,7 +120,11 @@ module.exports.commentsGET = function commentsGET (req, res, next, page, limit, 
 module.exports.commentsPOST = function commentsPOST (req, res, next, body) {
   Comments.commentsPOST(body)
     .then(function (response) {
-      utils.writeJson(res, response);
+      if (response.error) {
+        res.status(response.statusCode || 500).json(response);
+      } else {
+        utils.writeJson(res, response);
+      }
     })
     .catch(function (response) {
       utils.writeJson(res, response);
@@ -136,7 +144,11 @@ module.exports.merchMerchIdCommentsGET = function merchMerchIdCommentsGET (req, 
 module.exports.merchMerchIdCommentsPOST = function merchMerchIdCommentsPOST (req, res, next, body, merchId) {
   Comments.merchMerchIdCommentsPOST(body, merchId)
     .then(function (response) {
-      utils.writeJson(res, response);
+      if (response.error) {
+        res.status(response.statusCode || 500).json(response);
+      } else {
+        utils.writeJson(res, response);
+      }
     })
     .catch(function (response) {
       utils.writeJson(res, response);
@@ -156,7 +168,11 @@ module.exports.tracksTrackIdCommentsGET = function tracksTrackIdCommentsGET (req
 module.exports.tracksTrackIdCommentsPOST = function tracksTrackIdCommentsPOST (req, res, next, body, trackId) {
   Comments.tracksTrackIdCommentsPOST(body, trackId)
     .then(function (response) {
-      utils.writeJson(res, response);
+      if (response.error) {
+        res.status(response.statusCode || 500).json(response);
+      } else {
+        utils.writeJson(res, response);
+      }
     })
     .catch(function (response) {
       utils.writeJson(res, response);

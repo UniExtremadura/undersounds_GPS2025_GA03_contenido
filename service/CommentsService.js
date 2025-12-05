@@ -71,13 +71,34 @@ exports.albumsAlbumIdCommentsGET = async function (albumId, page, limit) {
  **/
 exports.albumsAlbumIdCommentsPOST = async function (body, albumId) {
   try {
+    const userId = body?.userId;
+    if (!userId) {
+      return { error: "userId is required", statusCode: 400 };
+    }
+
+    // Verificar si el usuario ya tiene un comentario en este álbum
+    const existingComment = await prisma.comment.findFirst({
+      where: {
+        targetType: "album",
+        targetId: albumId,
+        userId: userId,
+      },
+    });
+
+    if (existingComment) {
+      return {
+        error: "Ya has comentado este álbum. Solo puedes tener un comentario por artículo.",
+        statusCode: 409,
+      };
+    }
+
     const created = await prisma.comment.create({
       data: {
         targetType: "album",
         targetId: albumId,
         text: body?.text ?? null,
         rating: body?.rating ?? null,
-        userId: body?.userId ?? null,
+        userId: userId,
         status: "visible",
       },
     });
@@ -315,13 +336,35 @@ exports.commentsPOST = async function (body) {
     if (!body?.targetType || !body?.targetId) {
       return { error: "Faltan targetType o targetId", statusCode: 400 };
     }
+    
+    const userId = body?.userId;
+    if (!userId) {
+      return { error: "userId is required", statusCode: 400 };
+    }
+
+    // Verificar si el usuario ya tiene un comentario en este artículo
+    const existingComment = await prisma.comment.findFirst({
+      where: {
+        targetType: body.targetType,
+        targetId: body.targetId,
+        userId: userId,
+      },
+    });
+
+    if (existingComment) {
+      return {
+        error: "Ya has comentado este artículo. Solo puedes tener un comentario por artículo.",
+        statusCode: 409,
+      };
+    }
+
     const created = await prisma.comment.create({
       data: {
         targetType: body.targetType,
         targetId: body.targetId,
         text: body?.text ?? null,
         rating: body?.rating ?? null,
-        userId: body?.userId ?? null,
+        userId: userId,
         status: "visible",
       },
     });
@@ -376,13 +419,34 @@ exports.merchMerchIdCommentsGET = async function (merchId, page, limit) {
  **/
 exports.merchMerchIdCommentsPOST = async function (body, merchId) {
   try {
+    const userId = body?.userId;
+    if (!userId) {
+      return { error: "userId is required", statusCode: 400 };
+    }
+
+    // Verificar si el usuario ya tiene un comentario en este producto
+    const existingComment = await prisma.comment.findFirst({
+      where: {
+        targetType: "merch",
+        targetId: merchId,
+        userId: userId,
+      },
+    });
+
+    if (existingComment) {
+      return {
+        error: "Ya has comentado este producto. Solo puedes tener un comentario por artículo.",
+        statusCode: 409,
+      };
+    }
+
     const created = await prisma.comment.create({
       data: {
         targetType: "merch",
         targetId: merchId,
         text: body?.text ?? null,
         rating: body?.rating ?? null,
-        userId: body?.userId ?? null,
+        userId: userId,
         status: "visible",
       },
     });
@@ -428,13 +492,34 @@ exports.tracksTrackIdCommentsGET = async function (trackId, page, limit) {
  **/
 exports.tracksTrackIdCommentsPOST = async function (body, trackId) {
   try {
+    const userId = body?.userId;
+    if (!userId) {
+      return { error: "userId is required", statusCode: 400 };
+    }
+
+    // Verificar si el usuario ya tiene un comentario en esta pista
+    const existingComment = await prisma.comment.findFirst({
+      where: {
+        targetType: "track",
+        targetId: trackId,
+        userId: userId,
+      },
+    });
+
+    if (existingComment) {
+      return {
+        error: "Ya has comentado esta pista. Solo puedes tener un comentario por artículo.",
+        statusCode: 409,
+      };
+    }
+
     const created = await prisma.comment.create({
       data: {
         targetType: "track",
         targetId: trackId,
         text: body?.text ?? null,
         rating: body?.rating ?? null,
-        userId: body?.userId ?? null,
+        userId: userId,
         status: "visible",
       },
     });
