@@ -3865,8 +3865,6 @@ components:
         likes: 6
         updatedAt: 2000-01-23T04:56:07.000+00:00
     CommentCreateInput:
-      required:
-      - text
       type: object
       properties:
         targetType:
@@ -3882,7 +3880,7 @@ components:
           type: string
         rating:
           maximum: 5
-          minimum: 1
+          minimum: 0
           type: integer
     PaginatedCommentList:
       type: object
